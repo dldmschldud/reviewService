@@ -31,23 +31,13 @@ public class ReviewService {
     public ReviewResponseDto getReviews(Long id){
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Product not found"));
-        List<Review> reviews = reviewRepository.findByProductId(id);
+        List<Review> reviews = reviewRepository.findByProductIdOrderByCreatedAtDesc(id);
         List<ReviewDto> reviewDto = reviews.stream().map(ReviewDto::new).collect(Collectors.toList());
         int totalCount = reviews.size();
         float score = product.getScore();
         int cursor = totalCount > 0 ? reviews.get(reviews.size() - 1).getId().intValue() : 0;
         return new ReviewResponseDto(totalCount,score,cursor,reviewDto);
     }
-    /*
-    public List<ReviewResponseDto> getReviews(Long id){
-        List<Review> reviews = reviewRepository.findByProductId(id);
-        List<ReviewResponseDto> reviewResponseDto = new ArrayList<>();
-
-        for(Review review: reviews){
-            reviewResponseDto.add(new ReviewResponseDto(review));
-        }
-        return reviewResponseDto;
-    }*/
 
     public void createReview(Long id, ReviewRequestDto reviewRequestDto) {//userid, score, content
 
