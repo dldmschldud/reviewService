@@ -9,6 +9,10 @@ import com.example.review.repository.ProductRepository;
 import com.example.review.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,15 +32,28 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ProductRepository productRepository;
 
-    public ReviewResponseDto getReviews(Long id){
+    public ReviewResponseDto getReviews(Long id, Long cursor, int size) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("해당 상품없음"));
-        List<Review> reviews = reviewRepository.findByProductIdOrderByCreatedAtDesc(id);
-        List<ReviewDto> reviewDto = reviews.stream().map(ReviewDto::new).collect(Collectors.toList());
-        int totalCount = reviews.size();
+
+        Pageable pageable = PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Review> reviewPage;
+
+        if (cursor == null) {
+            reviewPage = reviewRepository.findByProductIdOrderByCreatedAtDesc(id, pageable);
+        } else {
+            reviewPage = reviewRepository.findByProductIdAndIdLessThanOrderByCreatedAtDesc(id, cursor, pageable);
+        }
+
+        List<ReviewDto> reviewDtos = reviewPage.getContent().stream()
+                .map(ReviewDto::new)
+                .collect(Collectors.toList());
+
+        int totalCount = (int) reviewPage.getTotalElements();
         float score = product.getScore();
-        int cursor = totalCount > 0 ? reviews.get(reviews.size() - 1).getId().intValue() : 0;
-        return new ReviewResponseDto(totalCount,score,cursor,reviewDto);
+        int nextCursor = reviewDtos.size() > 0 ? reviewDtos.get(reviewDtos.size() - 1).getId().intValue() : 0;
+
+        return new ReviewResponseDto(totalCount, score, nextCursor, reviewDtos);
     }
 
     public void createReview(Long id, ReviewRequestDto reviewRequestDto) {//userid, score, content

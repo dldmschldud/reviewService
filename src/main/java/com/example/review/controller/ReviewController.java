@@ -22,10 +22,15 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @GetMapping("/{productId}/reviews")
-    public ReviewResponseDto getReviews(@PathVariable("productId") Long id){
-        ReviewResponseDto reviewResponseDto = reviewService.getReviews(id);
-
-        return reviewResponseDto;
+    public ResponseEntity<ReviewResponseDto> getReviews(@PathVariable("productId") Long id,
+                                                        @RequestParam(value ="cursor", required = false) Long cursor,
+                                                        @RequestParam(value ="size",defaultValue = "10") int size){
+        try{
+            ReviewResponseDto reviewResponseDto = reviewService.getReviews(id,cursor,size);
+            return new ResponseEntity<>(reviewResponseDto,HttpStatus.OK);
+        } catch(NoSuchElementException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
 
     @PostMapping("/{productId}/reviews")
