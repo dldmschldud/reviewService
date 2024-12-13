@@ -30,11 +30,13 @@ public class ReviewController {
 
     @PostMapping("/{productId}/reviews")
     public ResponseEntity<String> createReview(@PathVariable("productId") Long id, @RequestBody ReviewRequestDto reviewRequestDto) {
-        try {//이부분 어떻게 처리하는게 좋을지 고민해보기
+        try {
             reviewService.createReview(id, reviewRequestDto);
-            return new ResponseEntity<>("Review created successfully", HttpStatus.CREATED);
+            return new ResponseEntity<>("리뷰 저장 성공", HttpStatus.CREATED);
         } catch (NoSuchElementException e) {
-            return new ResponseEntity<>("Product not found", HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>("해당 상품없음", HttpStatus.NOT_FOUND);
+        } catch(IllegalStateException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
         }
     }
 

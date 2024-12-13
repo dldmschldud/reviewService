@@ -30,7 +30,7 @@ public class ReviewService {
 
     public ReviewResponseDto getReviews(Long id){
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Product not found"));
+                .orElseThrow(() -> new NoSuchElementException("해당 상품없음"));
         List<Review> reviews = reviewRepository.findByProductIdOrderByCreatedAtDesc(id);
         List<ReviewDto> reviewDto = reviews.stream().map(ReviewDto::new).collect(Collectors.toList());
         int totalCount = reviews.size();
@@ -41,12 +41,17 @@ public class ReviewService {
 
     public void createReview(Long id, ReviewRequestDto reviewRequestDto) {//userid, score, content
 
-        Optional<Product> result = productRepository.findById(id);
-        Product product = result.orElseThrow();
-        product.change(reviewRequestDto.getScore());
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("해당 상품없음"));
 
-        Review review = new Review(product,reviewRequestDto);
-        reviewRepository.save(review);
+        Optional<Review> review = reviewRepository.findByUserIdAndProductId(reviewRequestDto.getUserId(),id);
+        if (review.isPresent()){
+            throw new IllegalStateException("한 상품에 하나의 리뷰만 작성 가능합니다");
+        }
+
+        product.change(reviewRequestDto.getScore());
+        Review resultReview = new Review(product,reviewRequestDto);
+        reviewRepository.save(resultReview);
     }
 
 }
